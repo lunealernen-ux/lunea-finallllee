@@ -1,24 +1,7 @@
 "use client";
-import { useEffect, useRef } from "react";
-
 export function QRCode({ url, size = 200 }: { url: string; size?: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    if (!canvasRef.current || !url) return;
-    import("qrcode").then(QR => {
-      QR.toCanvas(canvasRef.current!, url, {
-        width: size,
-        margin: 2,
-        color: { dark: "#1d1d1f", light: "#ffffff" },
-      });
-    });
-  }, [url, size]);
-
+  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=1d1d1f&margin=10`;
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ borderRadius: 12, display: "block" }}
-    />
+    <img src={apiUrl} alt="QR Code" width={size} height={size} style={{ borderRadius: 12, display: "block" }} />
   );
 }
