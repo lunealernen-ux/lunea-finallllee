@@ -4,7 +4,6 @@ import { useLuneaStore } from "@/store/lunea";
 import { Phase } from "@/types";
 import { PHASE_META, Lbl, PillBadge, Stars } from "@/components/ui";
 import { Timer } from "@/components/shared/Timer";
-import { QRCode } from "@/components/shared/QRCode";
 
 const PHASE_COLORS: Record<Phase, string> = {
   eigen: "#1d8348", ki: "#0071e3", fokus: "#1d1d1f", reflexion: "#6e3cbf",
@@ -12,26 +11,15 @@ const PHASE_COLORS: Record<Phase, string> = {
 
 export function Topbar({ onAnalyze, onGroupCompare }: { onAnalyze: () => void; onGroupCompare: () => void }) {
   const { session, setPhase, endSession } = useLuneaStore();
-  const [panel, setPanel] = useState<"students" | "analysis" | "share" | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [panel, setPanel] = useState<"students" | "analysis" | null>(null);
 
   if (!session) return null;
   const { config, currentPhase, studentSessions, analysis } = session;
   const students = Object.values(studentSessions);
   const allPrompts = students.flatMap(ss => ss.prompts);
   const sc = config.subjectColor;
-  const toggle = (p: "students" | "analysis" | "share") => setPanel(prev => prev === p ? null : p);
+  const toggle = (p: "students" | "analysis") => setPanel(prev => prev === p ? null : p);
   const phases: Phase[] = ["eigen", "ki", "fokus", "reflexion"];
-
-  const shareUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/?code=${config.sessionCode}`
-    : "";
-
-  const copyUrl = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <>
@@ -46,6 +34,8 @@ export function Topbar({ onAnalyze, onGroupCompare }: { onAnalyze: () => void; o
           <span style={{ fontSize: 13, color: "#6e6e73", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {config.topic}
           </span>
+          <span style={{ color: "#d2d2d7", fontSize: 12 }}>·</span>
+          <span style={{ fontSize: 12, color: "#6e6e73" }}>Jg. {config.grade}</span>
         </div>
 
         {/* Mitte: Phasen */}
@@ -72,19 +62,17 @@ export function Topbar({ onAnalyze, onGroupCompare }: { onAnalyze: () => void; o
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
           <Timer />
 
-          {/* Session Code + Share */}
-          <button onClick={() => toggle("share")} style={{
-            padding: "4px 12px", borderRadius: 8, cursor: "pointer",
-            background: panel === "share" ? "#1d1d1f" : "#f5f5f7",
-            border: "1px solid rgba(0,0,0,0.08)",
+          {/* Session Code */}
+          <div style={{
+            padding: "4px 12px", borderRadius: 8,
+            background: "#f5f5f7", border: "1px solid rgba(0,0,0,0.08)",
             display: "flex", alignItems: "center", gap: 6,
-            fontFamily: "inherit",
           }}>
-            <span style={{ fontSize: 10, color: panel === "share" ? "#fff" : "#a1a1a6", fontWeight: 500 }}>CODE</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: panel === "share" ? "#fff" : "#1d1d1f", letterSpacing: "0.1em" }}>
+            <span style={{ fontSize: 10, color: "#a1a1a6", fontWeight: 500 }}>CODE</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#1d1d1f", letterSpacing: "0.1em" }}>
               {config.sessionCode}
             </span>
-          </button>
+          </div>
 
           <button onClick={() => toggle("students")} style={{
             padding: "5px 12px", borderRadius: 980, cursor: "pointer",
@@ -97,7 +85,7 @@ export function Topbar({ onAnalyze, onGroupCompare }: { onAnalyze: () => void; o
 
           <button onClick={() => { onAnalyze(); toggle("analysis"); }} style={{
             padding: "5px 12px", borderRadius: 980, cursor: "pointer",
-            border: `1px solid rgba(0,113,227,0.2)`,
+            border: `1px solid ${panel === "analysis" ? "rgba(0,113,227,0.4)" : "rgba(0,113,227,0.2)"}`,
             background: panel === "analysis" ? "rgba(0,113,227,0.08)" : "transparent",
             color: "#0071e3", fontSize: 13, fontFamily: "inherit",
           }}>Analyse</button>
@@ -121,54 +109,7 @@ export function Topbar({ onAnalyze, onGroupCompare }: { onAnalyze: () => void; o
         </div>
       </div>
 
-      {/* Share Panel */}
-      {panel === "share" && (
-        <div className="slide-down" style={{
-          position: "fixed", top: 60, right: 16, zIndex: 300,
-          width: 380, background: "#fff",
-          border: "1px solid rgba(0,0,0,0.1)",
-          borderRadius: 18, boxShadow: "0 12px 48px rgba(0,0,0,0.12)", padding: 20,
-        }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#1d1d1f", marginBottom: 4 }}>
-            Schüler:innen einladen
-          </div>
-          <div style={{ fontSize: 13, color: "#6e6e73", marginBottom: 20, lineHeight: 1.6 }}>
-            QR-Code scannen oder Link teilen.
-          </div>
-
-          {/* QR Code */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-            <div style={{ padding: 16, background: "#fff", borderRadius: 16, border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-              {shareUrl && <QRCode url={shareUrl} size={180} />}
-            </div>
-          </div>
-
-          {/* Big code */}
-          <div style={{ textAlign: "center", marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: "#a1a1a6", marginBottom: 4 }}>Session-Code</div>
-            <div style={{ fontSize: 36, fontWeight: 800, color: "#1d1d1f", letterSpacing: "0.15em" }}>
-              {config.sessionCode}
-            </div>
-          </div>
-
-          {/* URL copy */}
-          <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 12px", background: "#f5f5f7", borderRadius: 10 }}>
-            <div style={{ fontSize: 11, color: "#6e6e73", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {shareUrl}
-            </div>
-            <button onClick={copyUrl} style={{
-              padding: "5px 12px", borderRadius: 8, border: "none",
-              background: copied ? "#1d8348" : "#1d1d1f",
-              color: "#fff", fontSize: 12, fontWeight: 600,
-              cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
-            }}>
-              {copied ? "✓ Kopiert" : "Link kopieren"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Students Panel */}
+      {/* Panel: Schüler */}
       {panel === "students" && (
         <div className="slide-down" style={{
           position: "fixed", top: 60, right: 16, zIndex: 300,
@@ -181,10 +122,7 @@ export function Topbar({ onAnalyze, onGroupCompare }: { onAnalyze: () => void; o
             <button onClick={() => setPanel(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6e6e73" }}>×</button>
           </div>
           {students.length === 0 ? (
-            <div style={{ fontSize: 13, color: "#a1a1a6", textAlign: "center", padding: "24px 0" }}>
-              Warte auf Schüler:innen…<br />
-              <span style={{ fontSize: 12 }}>Teile den Code über das CODE-Menü</span>
-            </div>
+            <div style={{ fontSize: 13, color: "#a1a1a6" }}>Noch keine Einträge.</div>
           ) : students.map(ss => (
             <div key={ss.student.id} style={{ padding: "10px 0", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
@@ -202,7 +140,7 @@ export function Topbar({ onAnalyze, onGroupCompare }: { onAnalyze: () => void; o
         </div>
       )}
 
-      {/* Analysis Panel */}
+      {/* Panel: Analyse */}
       {panel === "analysis" && (
         <div className="slide-down" style={{
           position: "fixed", top: 60, right: 16, zIndex: 300,
@@ -228,13 +166,30 @@ export function Topbar({ onAnalyze, onGroupCompare }: { onAnalyze: () => void; o
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                     <span style={{ fontSize: 11, color: "#0071e3", fontWeight: 700 }}>#{p.rank} · {p.studentName}</span>
+                    {i === 0 && <span style={{ fontSize: 11, color: "#0071e3" }}>Stärkster Prompt</span>}
                   </div>
-                  <div style={{ fontSize: 13, color: "#1d1d1f", marginBottom: 5 }}>„{p.text}"</div>
-                  <div style={{ fontSize: 12, color: "#6e6e73" }}>{p.reason}</div>
+                  <div style={{ fontSize: 13, color: "#1d1d1f", marginBottom: 5, lineHeight: 1.45 }}>„{p.text}"</div>
+                  <div style={{ fontSize: 12, color: "#6e6e73", lineHeight: 1.55 }}>{p.reason}</div>
                 </div>
               ))}
+              {analysis.groupPatterns.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6e6e73", marginBottom: 8, letterSpacing: "0.04em", textTransform: "uppercase" }}>Muster in der Gruppe</div>
+                  {analysis.groupPatterns.map((pat, i) => (
+                    <div key={i} style={{ fontSize: 13, color: "#424245", marginBottom: 5, paddingLeft: 12, borderLeft: "2px solid rgba(0,0,0,0.1)", lineHeight: 1.5 }}>{pat}</div>
+                  ))}
+                </div>
+              )}
+              {analysis.commonWeaknesses.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6e6e73", marginBottom: 8, letterSpacing: "0.04em", textTransform: "uppercase" }}>Häufige Schwächen</div>
+                  {analysis.commonWeaknesses.map((w, i) => (
+                    <div key={i} style={{ fontSize: 13, color: "rgba(220,38,38,0.8)", marginBottom: 5, paddingLeft: 12, borderLeft: "2px solid rgba(220,38,38,0.2)", lineHeight: 1.5 }}>{w}</div>
+                  ))}
+                </div>
+              )}
               {analysis.generalFeedback && (
-                <div style={{ marginTop: 14, padding: "12px 14px", background: "rgba(0,113,227,0.05)", borderRadius: 12, fontSize: 13, color: "#424245", lineHeight: 1.65 }}>
+                <div style={{ marginTop: 14, padding: "12px 14px", background: "rgba(0,113,227,0.05)", border: "1px solid rgba(0,113,227,0.12)", borderRadius: 12, fontSize: 13, color: "#424245", lineHeight: 1.65 }}>
                   {analysis.generalFeedback}
                 </div>
               )}
